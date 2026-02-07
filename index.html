@@ -1,82 +1,240 @@
-```html
 <!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>아덴의 잔상 - 리니지 스타일 클릭커</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>아덴의 잔상 - FULL Edition</title>
     <style>
-        body { background: #1a1a1a; color: white; font-family: 'Apple SD Gothic Neo', sans-serif; text-align: center; }
-        #game-container { max-width: 500px; margin: auto; border: 2px solid #333; padding: 20px; border-radius: 10px; }
-        .stat-box { display: flex; justify-content: space-around; background: #2a2a2a; padding: 10px; border-radius: 5px; }
-        #monster { width: 200px; height: 200px; margin: 20px auto; background: #444; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 50%; transition: transform 0.1s; }
-        #monster:active { transform: scale(0.95); }
-        .btn { background: #d4af37; border: none; padding: 10px; margin: 5px; cursor: pointer; font-weight: bold; border-radius: 3px; }
-        .btn:hover { background: #f1c40f; }
-        #log { font-size: 0.8em; color: #aaa; height: 50px; overflow-y: auto; margin-top: 10px; }
+        :root {
+            --primary-gold: #d4af37;
+            --blue-magic: #00f2ff;
+            --auto-green: #2ecc71;
+            --potion-green: #a2ff00;
+        }
+        body { 
+            background: #050505; color: white; font-family: 'Malgun Gothic', sans-serif; 
+            margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh;
+            overflow: hidden;
+        }
+        #game-screen {
+            width: 400px; height: 650px;
+            background: url('https://images.unsplash.com/photo-1614850523296-d8c1af93d400?ixlib=rb-1.2.1&auto=format&fit=crop&w=400&q=80') center/cover;
+            border: 4px solid #333; position: relative; border-radius: 15px; box-shadow: 0 0 30px rgba(0,0,0,0.8);
+        }
+        .status-bar {
+            background: rgba(0, 0, 0, 0.8); padding: 10px; display: flex; justify-content: space-around;
+            border-bottom: 2px solid var(--primary-gold); font-size: 14px;
+        }
+        /* 랭킹 UI */
+        #rank-box {
+            position: absolute; top: 50px; left: 10px; font-size: 12px; color: var(--primary-gold);
+            background: rgba(0,0,0,0.5); padding: 5px; border-radius: 5px;
+        }
+        #monster-zone {
+            height: 250px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            position: relative; cursor: crosshair; margin-top: 40px;
+        }
+        #monster-img { width: 140px; transition: transform 0.05s; filter: drop-shadow(0 0 10px red); }
+        .hp-container { width: 200px; height: 8px; background: #333; border: 1px solid #fff; margin-top: 15px; }
+        #hp-bar { width: 100%; height: 100%; background: linear-gradient(to right, #f00, #900); }
+
+        /* 버튼들 */
+        #auto-btn {
+            position: absolute; top: 50px; right: 10px; width: 55px; height: 55px;
+            border-radius: 50%; border: 2px solid #555; background: rgba(0,0,0,0.6);
+            color: white; font-weight: bold; cursor: pointer; font-size: 11px;
+        }
+        #auto-btn.active { border-color: var(--auto-green); color: var(--auto-green); box-shadow: 0 0 10px var(--auto-green); }
+
+        .controls {
+            position: absolute; bottom: 0; width: 100%; background: rgba(0,0,0,0.9);
+            padding: 10px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+        }
+        .btn {
+            background: #1a1a1a; border: 1px solid var(--primary-gold); color: var(--primary-gold);
+            padding: 10px; cursor: pointer; font-size: 12px;
+        }
+        .potion-btn { border-color: var(--potion-green); color: var(--potion-green); position: relative; }
+        #potion-timer { position: absolute; top: 0; left: 0; height: 100%; background: rgba(162, 255, 0, 0.2); width: 0%; pointer-events: none; }
+
+        #log { font-size: 11px; height: 35px; color: #ccc; text-align: center; margin-bottom: 70px; }
+        .damage-text { position: absolute; color: white; font-weight: bold; font-size: 22px; pointer-events: none; animation: floatUp 0.6s ease-out forwards; }
+        @keyframes floatUp { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-80px); opacity: 0; } }
+        .hit { animation: shake 0.1s; filter: brightness(3) !important; }
+        @keyframes shake { 0% { transform: translate(2px, 2px); } 50% { transform: translate(-2px, -2px); } 100% { transform: translate(0, 0); } }
     </style>
 </head>
 <body>
 
-<div id="game-container">
-    <h2>아덴의 잔상</h2>
-    <div class="stat-box">
-        <div>골드: <span id="gold">0</span>G</div>
-        <div>공격력: <span id="atk">10</span></div>
+<div id="game-screen">
+    <div class="status-bar">
+        <div>💰 <span id="gold">0</span></div>
+        <div>⚔ <span id="atk">10</span> (+<span id="plus">0</span>)</div>
     </div>
 
-    <div id="monster" onclick="attackMonster()">
-        <span id="monster-hp">HP: 100</span>
+    <div id="rank-box">🏆 최고 레벨: <span id="best-lv">0</span></div>
+    <button id="auto-btn" onclick="toggleAuto()">AUTO<br>OFF</button>
+
+    <div id="monster-zone" onclick="manualAttack(event)">
+        <img id="monster-img" src="https://img.icons8.com/color/200/dragon.png" alt="Monster">
+        <div class="hp-container">
+            <div id="hp-bar"></div>
+        </div>
+        <div id="monster-name" style="margin-top:5px; font-weight:bold; color:#ff4444;">용의 자손 (Lv.<span id="cur-lv">1</span>)</div>
     </div>
 
-    <div>
-        <button class="btn" onclick="upgradeAtk()">검 강화 (100G)</button>
-        <button class="btn" onclick="gamble()">변신 뽑기 (500G)</button>
-    </div>
+    <div id="log">전장으로 진격하십시오.</div>
 
-    <div id="log">전투를 시작하세요...</div>
+    <div class="controls">
+        <button class="btn" onclick="upgrade()">장비 강화<br><span id="cost">100</span>G</button>
+        <button class="btn" onclick="transform()">마력 변신<br>5000G</button>
+        <button class="btn potion-btn" onclick="usePotion()">초록 물약 사용<br>300G (10초)
+            <div id="potion-timer"></div>
+        </button>
+        <button class="btn" onclick="saveGame()">데이터 저장</button>
+    </div>
 </div>
 
 <script>
     let gold = 0;
-    let atk = 10;
+    let baseAtk = 10;
+    let enchant = 0;
+    let lv = 1;
+    let bestLv = localStorage.getItem('aden_best_lv') || 1;
+    let monsterMaxHp = 100;
     let monsterHp = 100;
-    let maxHp = 100;
+    let enchantCost = 100;
+    let isAuto = false;
+    let autoTimer = null;
+    let attackSpeed = 800; // 기본 공격속도 (ms)
+    let isPotionActive = false;
 
-    function attackMonster() {
-        monsterHp -= atk;
+    function manualAttack(e) { processAttack(e.clientX, e.clientY); }
+
+    function processAttack(x, y) {
+        let totalAtk = baseAtk + (enchant * 7);
+        monsterHp -= totalAtk;
+        showDamage(x, y, totalAtk);
+        monsterImg.classList.add('hit');
+        setTimeout(() => monsterImg.classList.remove('hit'), 100);
+
         if (monsterHp <= 0) {
-            let reward = 10 + Math.floor(Math.random() * 10);
-            gold += reward;
-            addLog(reward + " 골드 획득!");
-            monsterHp = maxHp + 20; // 갈수록 강해짐
-            maxHp = monsterHp;
+            gold += 20 + (lv * 5);
+            lv++;
+            if (lv > bestLv) {
+                bestLv = lv;
+                localStorage.setItem('aden_best_lv', bestLv);
+            }
+            monsterMaxHp = Math.floor(100 * Math.pow(1.15, lv));
+            monsterHp = monsterMaxHp;
+            logEl.innerText = "몬스터 처치! 레벨 업!";
         }
         updateUI();
     }
 
-    function upgradeAtk() {
-        if (gold >= 100) {
-            gold -= 100;
-            atk += 5;
-            addLog("검 강화 성공! 공격력이 상승했습니다.");
+    function toggleAuto() {
+        isAuto = !isAuto;
+        autoBtn.classList.toggle('active');
+        autoBtn.innerHTML = isAuto ? "AUTO<br>ON" : "AUTO<br>OFF";
+        if (isAuto) startAuto(); else clearInterval(autoTimer);
+    }
+
+    function startAuto() {
+        clearInterval(autoTimer);
+        autoTimer = setInterval(() => {
+            const rect = monsterImg.getBoundingClientRect();
+            processAttack(rect.left + 70, rect.top + 70);
+        }, isPotionActive ? attackSpeed / 2 : attackSpeed);
+    }
+
+    function usePotion() {
+        if (gold >= 300 && !isPotionActive) {
+            gold -= 300;
+            isPotionActive = true;
+            logEl.innerText = "초록 물약 사용! 공격 속도가 2배가 됩니다.";
+            let timeLeft = 100;
+            const timerInterval = setInterval(() => {
+                timeLeft -= 1;
+                document.getElementById('potion-timer').style.width = timeLeft + "%";
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    isPotionActive = false;
+                    if (isAuto) startAuto(); // 속도 복구
+                    logEl.innerText = "물약 효과가 종료되었습니다.";
+                }
+            }, 100);
+            if (isAuto) startAuto(); // 즉시 속도 적용
+        } else if (isPotionActive) {
+            logEl.innerText = "이미 물약을 복용 중입니다.";
+        } else { logEl.innerText = "골드가 부족합니다."; }
+        updateUI();
+    }
+
+    function upgrade() {
+        if (gold >= enchantCost) {
+            gold -= enchantCost;
+            let success = enchant < 6 || Math.random() > 0.45;
+            if (success) {
+                enchant++;
+                enchantCost = Math.floor(enchantCost * 1.7);
+                logEl.style.color = 'var(--blue-magic)';
+                logEl.innerText = `강화 성공! (+${enchant}) 장비가 빛납니다.`;
+            } else {
+                enchant = 0;
+                logEl.style.color = 'red';
+                logEl.innerText = "강화 실패! 장비가 흔적도 없이 사라졌습니다.";
+            }
             updateUI();
-        } else {
-            addLog("골드가 부족합니다.");
         }
     }
 
-    function addLog(msg) {
-        const log = document.getElementById('log');
-        log.innerText = msg;
+    function transform() {
+        if (gold >= 5000) {
+            gold -= 5000;
+            baseAtk += 100;
+            monsterImg.src = "https://img.icons8.com/color/200/knight.png";
+            logEl.innerText = "영웅 변신 성공! 압도적인 힘을 느낍니다.";
+            updateUI();
+        }
     }
 
-    function updateUI() {
-        document.getElementById('gold').innerText = gold;
-        document.getElementById('atk').innerText = atk;
-        document.getElementById('monster-hp').innerText = "HP: " + monsterHp;
+    function showDamage(x, y, dmg) {
+        const d = document.createElement('div');
+        d.className = 'damage-text';
+        d.style.left = (x - 20 + Math.random() * 40) + 'px';
+        d.style.top = (y - 50) + 'px';
+        d.innerText = dmg;
+        document.body.appendChild(d);
+        setTimeout(() => d.remove(), 600);
     }
+
+    const goldEl = document.getElementById('gold');
+    const atkEl = document.getElementById('atk');
+    const plusEl = document.getElementById('plus');
+    const hpBar = document.getElementById('hp-bar');
+    const monsterImg = document.getElementById('monster-img');
+    const logEl = document.getElementById('log');
+    const costEl = document.getElementById('cost');
+    const autoBtn = document.getElementById('auto-btn');
+
+    function updateUI() {
+        goldEl.innerText = gold.toLocaleString();
+        atkEl.innerText = baseAtk + (enchant * 7);
+        plusEl.innerText = enchant;
+        costEl.innerText = enchantCost;
+        hpBar.style.width = (monsterHp / monsterMaxHp * 100) + "%";
+        document.getElementById('cur-lv').innerText = lv;
+        document.getElementById('best-lv').innerText = bestLv;
+    }
+
+    function saveGame() {
+        localStorage.setItem('aden_gold', gold);
+        localStorage.setItem('aden_enchant', enchant);
+        logEl.innerText = "진행 상황이 브라우저에 저장되었습니다.";
+    }
+
+    // 초기 실행
+    updateUI();
 </script>
 </body>
 </html>
-
-```
