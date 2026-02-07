@@ -1,0 +1,82 @@
+```html
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>아덴의 잔상 - 리니지 스타일 클릭커</title>
+    <style>
+        body { background: #1a1a1a; color: white; font-family: 'Apple SD Gothic Neo', sans-serif; text-align: center; }
+        #game-container { max-width: 500px; margin: auto; border: 2px solid #333; padding: 20px; border-radius: 10px; }
+        .stat-box { display: flex; justify-content: space-around; background: #2a2a2a; padding: 10px; border-radius: 5px; }
+        #monster { width: 200px; height: 200px; margin: 20px auto; background: #444; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 50%; transition: transform 0.1s; }
+        #monster:active { transform: scale(0.95); }
+        .btn { background: #d4af37; border: none; padding: 10px; margin: 5px; cursor: pointer; font-weight: bold; border-radius: 3px; }
+        .btn:hover { background: #f1c40f; }
+        #log { font-size: 0.8em; color: #aaa; height: 50px; overflow-y: auto; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <h2>아덴의 잔상</h2>
+    <div class="stat-box">
+        <div>골드: <span id="gold">0</span>G</div>
+        <div>공격력: <span id="atk">10</span></div>
+    </div>
+
+    <div id="monster" onclick="attackMonster()">
+        <span id="monster-hp">HP: 100</span>
+    </div>
+
+    <div>
+        <button class="btn" onclick="upgradeAtk()">검 강화 (100G)</button>
+        <button class="btn" onclick="gamble()">변신 뽑기 (500G)</button>
+    </div>
+
+    <div id="log">전투를 시작하세요...</div>
+</div>
+
+<script>
+    let gold = 0;
+    let atk = 10;
+    let monsterHp = 100;
+    let maxHp = 100;
+
+    function attackMonster() {
+        monsterHp -= atk;
+        if (monsterHp <= 0) {
+            let reward = 10 + Math.floor(Math.random() * 10);
+            gold += reward;
+            addLog(reward + " 골드 획득!");
+            monsterHp = maxHp + 20; // 갈수록 강해짐
+            maxHp = monsterHp;
+        }
+        updateUI();
+    }
+
+    function upgradeAtk() {
+        if (gold >= 100) {
+            gold -= 100;
+            atk += 5;
+            addLog("검 강화 성공! 공격력이 상승했습니다.");
+            updateUI();
+        } else {
+            addLog("골드가 부족합니다.");
+        }
+    }
+
+    function addLog(msg) {
+        const log = document.getElementById('log');
+        log.innerText = msg;
+    }
+
+    function updateUI() {
+        document.getElementById('gold').innerText = gold;
+        document.getElementById('atk').innerText = atk;
+        document.getElementById('monster-hp').innerText = "HP: " + monsterHp;
+    }
+</script>
+</body>
+</html>
+
+```
